@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown & Mermaid 即時預覽器</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <style>
+        /* Markdown 預覽區的基礎樣式優化 */
+        .prose h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.2em; }
+        .prose h2 { font-size: 1.5em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.2em; }
+        .prose h3 { font-size: 1.25em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 1em; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose code { background-color: #f3f4f6; padding: 0.2em 0.4em; border-radius: 0.25em; font-family: monospace; }
+        .prose pre { background-color: #1f2937; color: #f9fafb; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-bottom: 1em; }
+        .prose pre code { background-color: transparent; color: inherit; padding: 0; }
+        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        .prose th, .prose td { border: 1px solid #e5e7eb; padding: 0.5em; text-align: left; }
+        .prose th { background-color: #f9fafb; }
+        .prose blockquote { border-left: 4px solid #d1d5db; padding-left: 1em; color: #4b5563; font-style: italic; margin-bottom: 1em; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col m-0 p-0 overflow-hidden">
+
+    <header class="bg-indigo-600 text-white px-6 py-3 shadow-md flex justify-between items-center shrink-0">
+        <h1 class="text-xl font-bold tracking-wide">Markdown & Mermaid Live Editor</h1>
+        <span class="text-sm bg-indigo-700 px-3 py-1 rounded-full text-indigo-100">GitHub Pages 專用版</span>
+    </header>
+
+    <main class="flex flex-1 overflow-hidden p-4 gap-4">
+        
+        <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 font-semibold text-gray-700 text-sm">
+                Markdown 輸入
+            </div>
+            <textarea id="editor" class="w-full flex-1 p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="請輸入 Markdown 或 Mermaid 語法..."></textarea>
+        </div>
+
+        <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 font-semibold text-gray-700 text-sm">
+                即時預覽
+            </div>
+            <div id="preview" class="prose max-w-none flex-1 p-4 overflow-y-auto bg-white"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+
+        // 【已修正】使用反斜線跳脫（\`）避免 JavaScript 樣板字串提前結束
+        const defaultText = `# 歡迎使用 Markdown 編輯器
+
+這是一個支援 **Markdown** 與 **Mermaid 圖表** 的即時預覽工具。
+
+## 基礎語法測試
+* 項目一
+* 項目二
+
+> 這是一段引言（Blockquote）。
+
+### 程式碼區塊測試
+\`\`\`javascript
+const greeting = "Hello World";
+console.log(greeting);
+\`\`\`
+
+---
+
+## Mermaid 圖表預覽
+只要在程式碼區塊指定 \`mermaid\` 關鍵字，系統就會自動渲染：
+
+\`\`\`mermaid
+graph TD
+    A[開始] --> B(處理)
+    B --> C{是否成功?}
+    C -- Yes --> D[顯示畫面]
+    C -- No --> E[錯誤處理]
+\`\`\`
+`;
+
+        // 處理並渲染 Markdown + Mermaid
+        function render() {
+            const rawMarkdown = editor.value;
+            
+            // 1. 使用 marked 轉換 Markdown 成 HTML
+            const htmlContent = marked.parse(rawMarkdown);
+            preview.innerHTML = htmlContent;
+
+            // 2. 尋找預覽區中符合 <pre><code class="language-mermaid"> 的區塊
+            const mermaidBlocks = preview.querySelectorAll('pre code.language-mermaid');
+            
+            mermaidBlocks.forEach((block, index) => {
+                const preElement = block.parentElement;
+                const codeText = block.textContent;
+                const uniqueId = `mermaid-${index}-${Date.now()}`;
+
+                // 建立一個容器來放渲染後的 SVG
+                const renderDiv = document.createElement('div');
+                renderDiv.className = 'mermaid-chart flex justify-center my-4';
+                
+                try {
+                    // 使用 mermaid.render 非同步渲染圖表
+                    mermaid.render(uniqueId, codeText).then(({ svg }) => {
+                        renderDiv.innerHTML = svg;
+                        // 用圖表取代原本的 <pre><code> 區塊
+                        if (preElement.parentNode) {
+                            preElement.parentNode.replaceChild(renderDiv, preElement);
+                        }
+                    });
+                } catch (error) {
+                    renderDiv.innerHTML = `<span class="text-red-500 font-mono text-xs">【Mermaid 語法錯誤】<br>${error.message}</span>`;
+                    if (preElement.parentNode) {
+                        preElement.parentNode.replaceChild(renderDiv, preElement);
+                    }
+                }
+            });
+        }
+
+        // 防抖動（Debounce）機制，避免輸入太快頻繁渲染造成卡頓
+        let timeoutId;
+        editor.addEventListener('input', () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(render, 300); 
+        });
+
+        // 綁定預設值並初始化渲染
+        editor.value = defaultText;
+        render();
+    </script>
+</body>
+</html>
