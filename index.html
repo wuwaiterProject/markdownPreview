@@ -99,7 +99,7 @@ console.log(greeting);
 ## Mermaid 圖表預覽
 只要在程式碼區塊指定 \`mermaid\` 關鍵字，系統就會自動渲染：
 
-## flow chart
+## 流程圖 (flow chart)
 \`\`\`mermaid
 graph TD
     A[開始] --> B(處理)
@@ -107,7 +107,8 @@ graph TD
     C -- Yes --> D[顯示畫面]
     C -- No --> E[錯誤處理]
 \`\`\`
-## mindmap
+
+## 心智圖 (mindmap)
 \`\`\`mermaid
 mindmap
   root((我的假期計畫))
@@ -120,6 +121,16 @@ mindmap
     在家休息
       看電影
       玩電動
+\`\`\`
+
+## 時序圖 (sequence)
+\`\`\`mermaid
+sequence diagram
+    autonumber
+    瀏覽器->>伺服器: 1. 我想看草莓蛋糕的網頁
+    伺服器->>資料庫: 2. 幫我找草莓蛋糕的資料
+    資料庫-->>伺服器: 3. 找到資料了，給你！
+    伺服器-->>瀏覽器: 4. 把漂亮的網頁傳給你看
 \`\`\`
 `;
 
